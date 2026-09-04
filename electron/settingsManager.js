@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { normalizeMcpApprovalSettings } = require('./mcpApproval');
 
 // Load environment variables from .env file
 require('dotenv').config();
@@ -29,6 +30,8 @@ function loadSettings() {
             useResponsesApi: false,
             logApiRequests: false,
             googleConnectors: { gmail: false, calendar: false, drive: false },
+            googleConnectorsApproval: { gmail: 'always', calendar: 'always', drive: 'always' },
+            remoteMcpServers: {},
             googleOAuthToken: "",
             googleRefreshToken: "",
             googleClientId: "",
@@ -57,6 +60,8 @@ function loadSettings() {
         useResponsesApi: false,
         logApiRequests: false,
         googleConnectors: { gmail: false, calendar: false, drive: false },
+        googleConnectorsApproval: { gmail: 'always', calendar: 'always', drive: 'always' },
+        remoteMcpServers: {},
         googleOAuthToken: "",
         googleRefreshToken: "",
         googleClientId: "",
@@ -112,7 +117,7 @@ function loadSettings() {
             // Optional: Persist the potentially updated settings back to file if defaults were applied
             // fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
 
-            return settings;
+            return normalizeMcpApprovalSettings(settings);
         } else {
             // Create settings file with defaults if it doesn't exist
             fs.writeFileSync(settingsPath, JSON.stringify(defaultSettings, null, 2));
@@ -175,7 +180,8 @@ function initializeSettingsHandlers(ipcMain, app) {
                 throw new Error("Invalid settings object provided.");
             }
             // Optionally add more validation here
-            fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+            const normalizedSettings = normalizeMcpApprovalSettings(settings);
+            fs.writeFileSync(settingsPath, JSON.stringify(normalizedSettings, null, 2));
             return { success: true };
         } catch (error) {
             console.error('Error saving settings:', error);
@@ -202,7 +208,8 @@ async function saveSettings(settings) {
         if (!settings || typeof settings !== 'object') {
             throw new Error("Invalid settings object provided.");
         }
-        fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+        const normalizedSettings = normalizeMcpApprovalSettings(settings);
+        fs.writeFileSync(settingsPath, JSON.stringify(normalizedSettings, null, 2));
         return { success: true };
     } catch (error) {
         console.error('Error saving settings:', error);
@@ -214,4 +221,4 @@ module.exports = {
     loadSettings,
     saveSettings,
     initializeSettingsHandlers
-}; 
+};

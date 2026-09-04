@@ -35,7 +35,7 @@ function Settings() {
     useResponsesApi: false,
     logApiRequests: false,
     googleConnectors: { gmail: false, calendar: false, drive: false },
-    googleConnectorsApproval: { gmail: 'never', calendar: 'never', drive: 'never' },
+    googleConnectorsApproval: { gmail: 'always', calendar: 'always', drive: 'always' },
     googleOAuthToken: '',
     googleRefreshToken: '',
     googleClientId: '',
@@ -79,7 +79,7 @@ function Settings() {
     serverUrl: '',
     serverLabel: '',
     serverDescription: '',
-    requireApproval: 'never',
+    requireApproval: 'always',
     allowedTools: '', // Comma-separated list of tool names to filter (empty = all tools)
     headers: {}
   });
@@ -130,7 +130,7 @@ function Settings() {
             settingsData.googleConnectors = { gmail: false, calendar: false, drive: false };
         }
         if (!settingsData.googleConnectorsApproval) {
-            settingsData.googleConnectorsApproval = { gmail: 'never', calendar: 'never', drive: 'never' };
+            settingsData.googleConnectorsApproval = { gmail: 'always', calendar: 'always', drive: 'always' };
         }
         if (!settingsData.googleOAuthToken) {
             settingsData.googleOAuthToken = '';
@@ -183,7 +183,7 @@ function Settings() {
             useResponsesApi: false,
             logApiRequests: false,
             googleConnectors: { gmail: false, calendar: false, drive: false },
-            googleConnectorsApproval: { gmail: 'never', calendar: 'never', drive: 'never' },
+            googleConnectorsApproval: { gmail: 'always', calendar: 'always', drive: 'always' },
             googleOAuthToken: '',
             googleRefreshToken: '',
             googleClientId: '',
@@ -292,6 +292,14 @@ function Settings() {
   };
 
   const handleGoogleConnectorApprovalChange = (connectorName, value) => {
+    if (
+      value === 'never' &&
+      !window.confirm(
+        `Auto-approve ${connectorName} tool calls? This connector can receive conversation-derived data and execute without another prompt.`
+      )
+    ) {
+      return;
+    }
     const updatedSettings = {
       ...settings,
       googleConnectorsApproval: {
@@ -934,12 +942,23 @@ function Settings() {
       return;
     }
 
+    const approvalPolicy = newRemoteMcpServer.requireApproval === 'never' ? 'never' : 'always';
+    const serverOrigin = new URL(newRemoteMcpServer.serverUrl).origin;
+    if (
+      approvalPolicy === 'never' &&
+      !window.confirm(
+        `Trust ${serverOrigin} for automatic tool calls? This server can receive conversation-derived data and tool arguments without another prompt.`
+      )
+    ) {
+      return;
+    }
+
     // Create the server configuration
     const serverConfig = {
       serverUrl: newRemoteMcpServer.serverUrl.trim(),
       serverLabel: newRemoteMcpServer.serverLabel.trim() || newRemoteMcpServer.id.trim(),
       serverDescription: newRemoteMcpServer.serverDescription.trim(),
-      requireApproval: newRemoteMcpServer.requireApproval || 'never'
+      requireApproval: approvalPolicy
     };
 
     // Include headers if present
@@ -978,7 +997,7 @@ function Settings() {
       serverUrl: '',
       serverLabel: '',
       serverDescription: '',
-      requireApproval: 'never',
+      requireApproval: 'always',
       allowedTools: '',
       headers: {}
     });
@@ -1013,7 +1032,7 @@ function Settings() {
       serverUrl: serverToEdit.serverUrl || '',
       serverLabel: serverToEdit.serverLabel || '',
       serverDescription: serverToEdit.serverDescription || '',
-      requireApproval: serverToEdit.requireApproval || 'never',
+      requireApproval: serverToEdit.requireApproval === 'never' ? 'never' : 'always',
       allowedTools: Array.isArray(serverToEdit.allowedTools) ? serverToEdit.allowedTools.join(', ') : '',
       headers: serverToEdit.headers || {}
     });
@@ -1026,7 +1045,7 @@ function Settings() {
       serverUrl: '',
       serverLabel: '',
       serverDescription: '',
-      requireApproval: 'never',
+      requireApproval: 'always',
       allowedTools: '',
       headers: {}
     });
@@ -1416,7 +1435,7 @@ function Settings() {
                           </div>
                           {settings.googleConnectors?.gmail && (
                             <Select
-                              value={settings.googleConnectorsApproval?.gmail || 'never'}
+                              value={settings.googleConnectorsApproval?.gmail === 'never' ? 'never' : 'always'}
                               onValueChange={(value) => handleGoogleConnectorApprovalChange('gmail', value)}
                             >
                               <SelectTrigger className="w-32 h-8">
@@ -1441,7 +1460,7 @@ function Settings() {
                           </div>
                           {settings.googleConnectors?.calendar && (
                             <Select
-                              value={settings.googleConnectorsApproval?.calendar || 'never'}
+                              value={settings.googleConnectorsApproval?.calendar === 'never' ? 'never' : 'always'}
                               onValueChange={(value) => handleGoogleConnectorApprovalChange('calendar', value)}
                             >
                               <SelectTrigger className="w-32 h-8">
@@ -1466,7 +1485,7 @@ function Settings() {
                           </div>
                           {settings.googleConnectors?.drive && (
                             <Select
-                              value={settings.googleConnectorsApproval?.drive || 'never'}
+                              value={settings.googleConnectorsApproval?.drive === 'never' ? 'never' : 'always'}
                               onValueChange={(value) => handleGoogleConnectorApprovalChange('drive', value)}
                             >
                               <SelectTrigger className="w-32 h-8">
@@ -1488,6 +1507,10 @@ function Settings() {
                         <Label className="text-sm font-medium">Remote MCP Servers</Label>
                         <p className="text-xs text-muted-foreground">
                           Connect to remote MCP servers. Groq handles tool discovery and execution server-side.
+                        </p>
+                        <p className="text-xs text-orange-600">
+                          Remote servers control their tool descriptions and can receive conversation-derived data.
+                          Keep “Always ask” enabled unless you explicitly trust the server.
                         </p>
                       </div>
 
@@ -1633,14 +1656,14 @@ function Settings() {
                         <div className="space-y-1">
                           <Label htmlFor="remote-mcp-require-approval" className="text-xs">Require Approval</Label>
                           <Select
-                            value={newRemoteMcpServer.requireApproval || 'never'}
+                            value={newRemoteMcpServer.requireApproval === 'never' ? 'never' : 'always'}
                             onValueChange={(value) => setNewRemoteMcpServer(prev => ({ ...prev, requireApproval: value }))}
                           >
                             <SelectTrigger className="h-8 text-sm">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="never">Auto-approve (never ask)</SelectItem>
+                              <SelectItem value="never">Auto-approve (trusted servers only)</SelectItem>
                               <SelectItem value="always">Always ask for approval</SelectItem>
                             </SelectContent>
                           </Select>
@@ -1752,7 +1775,7 @@ function Settings() {
                                 serverUrl: '',
                                 serverLabel: '',
                                 serverDescription: '',
-                                requireApproval: 'never',
+                                requireApproval: 'always',
                                 allowedTools: '',
                                 headers: {}
                               });
@@ -2589,4 +2612,4 @@ function Settings() {
   );
 }
 
-export default Settings; 
+export default Settings;

@@ -5,6 +5,7 @@ const path = require('path');
 const { pruneMessageHistory } = require('./messageUtils');
 const { supportsBuiltInTools } = require('../shared/models');
 const googleOAuthManager = require('./googleOAuthManager');
+const { normalizeApprovalPolicy } = require('./mcpApproval');
 
 // Track active streams to allow cancellation
 const activeStreams = new Map();
@@ -832,7 +833,7 @@ async function handleResponsesApiStream(event, messages, model, settings, modelC
                 server_label: "gmail",
                 connector_id: "connector_gmail",
                 authorization: currentSettings.googleOAuthToken,
-                require_approval: currentSettings.googleConnectorsApproval?.gmail || "never"
+                require_approval: normalizeApprovalPolicy(currentSettings.googleConnectorsApproval?.gmail)
             });
         }
         if (currentSettings.googleConnectors?.calendar && currentSettings.googleOAuthToken) {
@@ -842,7 +843,7 @@ async function handleResponsesApiStream(event, messages, model, settings, modelC
                 server_label: "google_calendar",
                 connector_id: "connector_googlecalendar",
                 authorization: currentSettings.googleOAuthToken,
-                require_approval: currentSettings.googleConnectorsApproval?.calendar || "never"
+                require_approval: normalizeApprovalPolicy(currentSettings.googleConnectorsApproval?.calendar)
             });
         }
         if (currentSettings.googleConnectors?.drive && currentSettings.googleOAuthToken) {
@@ -852,7 +853,7 @@ async function handleResponsesApiStream(event, messages, model, settings, modelC
                 server_label: "google_drive",
                 connector_id: "connector_googledrive",
                 authorization: currentSettings.googleOAuthToken,
-                require_approval: currentSettings.googleConnectorsApproval?.drive || "never"
+                require_approval: normalizeApprovalPolicy(currentSettings.googleConnectorsApproval?.drive)
             });
         }
 
@@ -879,7 +880,7 @@ async function handleResponsesApiStream(event, messages, model, settings, modelC
                     type: "mcp",
                     server_label: label,
                     server_url: serverConfig.serverUrl,
-                    require_approval: serverConfig.requireApproval || "never"
+                    require_approval: normalizeApprovalPolicy(serverConfig.requireApproval)
                 };
                 
                 // Add server_description if provided
