@@ -217,7 +217,7 @@ function updateChatTitle(chatId, title) {
 
 /**
  * Generate a title for a chat based on the first user message
- * Uses llama-3.1-8b-instant for fast title generation
+ * Uses openai/gpt-oss-120b for fast title generation
  * @param {string} userMessage - The first user message content
  * @returns {Promise<string>} Generated title
  */
@@ -264,7 +264,7 @@ async function generateChatTitle(userMessage) {
                     content: `Generate a short title for a conversation that starts with this message:\n\n${truncatedMessage}`
                 }
             ],
-            model: 'llama-3.1-8b-instant',
+            model: 'openai/gpt-oss-120b',
             temperature: 0.3,
             max_tokens: 20,
             stream: false

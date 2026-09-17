@@ -468,7 +468,7 @@ function getLastNWords(text, n) {
     return words.slice(-n).join(' ');
 }
 
-// Summarize reasoning chunk using llama-3.1-8b-instant (non-blocking)
+// Summarize reasoning chunk using openai/gpt-oss-120b (non-blocking)
 async function summarizeReasoningChunk(groq, reasoningText, event, streamId, summaryIndex) {
     try {
         const response = await groq.chat.completions.create({
@@ -482,7 +482,7 @@ async function summarizeReasoningChunk(groq, reasoningText, event, streamId, sum
                     content: `What activity is happening here in 3-5 words:\n\n${reasoningText}\n\nRespond with ONLY 3-5 plain words:`
                 }
             ],
-            model: 'llama-3.1-8b-instant',
+            model: 'openai/gpt-oss-120b',
             temperature: 0.3,
             max_tokens: 10,
             stream: false
