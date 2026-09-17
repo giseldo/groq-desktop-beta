@@ -28,6 +28,11 @@ function createWindow(screen, BrowserWindow) {
     }
   });
 
+  // Maximize window on Windows
+  if (process.platform === 'win32') {
+    mainWindow.maximize();
+  }
+
   // Determine URL based on environment
   const startUrl = process.env.NODE_ENV === 'development'
     ? 'http://localhost:5173'
