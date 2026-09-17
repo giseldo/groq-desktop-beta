@@ -46,6 +46,7 @@ jobs:
 
       - name: Extract version from tag
         id: extract_version
+        shell: bash
         run: |
           # Extract version from tag (removes 'v' prefix)
           TAG_NAME=${{ github.ref_name }}
@@ -57,6 +58,7 @@ jobs:
         run: ${{ matrix.build_command }}
 
       - name: List release files
+        shell: bash
         run: ls -la release/
 
       - name: Upload artifacts
