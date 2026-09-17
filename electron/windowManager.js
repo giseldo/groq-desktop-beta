@@ -7,7 +7,7 @@ function createWindow(screen, BrowserWindow) {
   const { height, width } = display.workAreaSize;
   const bounds = display.bounds;
 
-  const windowWidth = Math.min(1600, width);
+  const windowWidth = process.platform === 'win32' ? width : Math.min(1600, width);
   const windowHeight = height;
 
   // Calculate center position
@@ -15,18 +15,24 @@ function createWindow(screen, BrowserWindow) {
   const x = bounds.x + Math.round((bounds.width - windowWidth) / 2);
   const y = bounds.y + Math.round((bounds.height - height) / 2);
 
-  mainWindow = new BrowserWindow({
+  const windowOptions = {
     width: windowWidth,
     height: windowHeight,
     x: x,
     y: y,
-    maxWidth: 1600,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js') // Assumes preload.js is in the same directory
     }
-  });
+  };
+
+  // Remove maxWidth constraint on Windows to allow full screen maximization
+  if (process.platform !== 'win32') {
+    windowOptions.maxWidth = 1600;
+  }
+
+  mainWindow = new BrowserWindow(windowOptions);
 
   // Maximize window on Windows
   if (process.platform === 'win32') {
