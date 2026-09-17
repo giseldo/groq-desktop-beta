@@ -457,6 +457,25 @@ function App() {
     };
   }, []);
 
+  // Set up global shortcut for new chat (Ctrl+N / Cmd+N)
+  useEffect(() => {
+    // Only set up listener if createNewChat is available
+    if (!createNewChat) return;
+
+    const removeShortcutListener = window.electron.onNewChatShortcut(() => {
+      console.log('[App] New chat shortcut triggered');
+      // Create a new chat with the currently selected model
+      createNewChat(selectedModel, useResponsesApi).catch(error => {
+        console.error('Error creating new chat via shortcut:', error);
+      });
+    });
+
+    // Clean up the listener when component unmounts
+    return () => {
+      if (removeShortcutListener) removeShortcutListener();
+    };
+  }, [createNewChat, selectedModel, useResponsesApi]);
+
   // Save model selection to settings when it changes, ONLY after initial load
   useEffect(() => {
     // Prevent saving during initial setup before models/settings are loaded/validated

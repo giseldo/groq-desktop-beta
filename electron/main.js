@@ -260,6 +260,21 @@ app.whenReady().then(async () => {
     mainWindow = null;
   });
 
+  // Register global shortcut for new chat (Ctrl+N on Windows/Linux, Cmd+N on Mac)
+  const newChatAccelerator = process.platform === 'darwin' ? 'Command+N' : 'Control+N';
+  const newChatShortcutRegistered = globalShortcut.register(newChatAccelerator, () => {
+    console.log(`Global hotkey ${newChatAccelerator} pressed - creating new chat`);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('new-chat-requested');
+    }
+  });
+
+  if (newChatShortcutRegistered) {
+    console.log(`Global hotkey ${newChatAccelerator} registered successfully for new chat`);
+  } else {
+    console.error(`Failed to register global hotkey ${newChatAccelerator} for new chat`);
+  }
+
   // Send pending context to renderer if available
   if (pendingContext) {
     mainWindow.webContents.once('did-finish-load', () => {

@@ -196,6 +196,14 @@ contextBridge.exposeInMainWorld('electron', {
   // Autocomplete
   getAutocompleteSuggestion: (options) => ipcRenderer.invoke('autocomplete:get-suggestion', options),
 
+  // New chat shortcut handler
+  onNewChatShortcut: (callback) => {
+    const listener = () => callback();
+    ipcRenderer.on('new-chat-requested', listener);
+    // Return cleanup function
+    return () => ipcRenderer.removeListener('new-chat-requested', listener);
+  },
+
   // --- Chat History Functions ---
   chatHistory: {
     list: () => ipcRenderer.invoke('chat-history-list'),
