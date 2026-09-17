@@ -4,10 +4,15 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
         include:
@@ -50,22 +55,32 @@ jobs:
 
       - name: Build Electron app
         run: ${{ matrix.build_command }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: List release files
-        run: ls -R release/
+        run: ls -la release/
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: release/
+          path: |
+            release/*.exe
+            release/*.blockmap
+            release/*.dmg
+            release/*.zip
+            release/*.AppImage
+            release/*.deb
+            release/*.rpm
+            release/*.yml
+            release/*.yaml
+          if-no-files-found: warn
           retention-days: 1
 
   publish-release:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
       - name: Download all artifacts
@@ -75,7 +90,7 @@ jobs:
           merge-multiple: true
 
       - name: List downloaded artifacts
-        run: ls -R artifacts/
+        run: ls -la artifacts/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -85,17 +100,17 @@ jobs:
           body: |
             ## Groq Desktop ${{ github.ref_name }}
             
-            **Changes:**
-            - [Ver notas de release ou commit history]
+            Multi-platform release for Groq Desktop.
             
             **Assets:**
-            - Windows: Installer (.exe) e Portable (.zip)
-            - macOS: .dmg
-            - Linux: AppImage, .deb, .rpm
+            - Windows: Installer (`.exe`) e Portable (`.exe`)
+            - macOS: Apple Disk Image (`.dmg`) / (`.zip`)
+            - Linux: `AppImage`, `.deb`, `.rpm`
           files: |
-            artifacts/**/*
+            artifacts/*
           prerelease: false
           draft: false
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

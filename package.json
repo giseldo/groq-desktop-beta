@@ -24,7 +24,7 @@
     "desktop",
     "chat"
   ],
-  "author": "",
+  "author": "Groq <support@groq.com>",
   "license": "ISC",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.7.0",
@@ -108,6 +108,7 @@
         "rpm"
       ],
       "category": "Development",
+      "maintainer": "Groq <support@groq.com>",
       "icon": "public/icon.png"
     }
   },

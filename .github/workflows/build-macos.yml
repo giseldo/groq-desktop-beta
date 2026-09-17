@@ -6,7 +6,8 @@ on:
     paths-ignore:
       - '**.md'
       - 'docs/**' # Ignore documentation changes if you have/create this folder
-  workflow_dispatch:
+permissions:
+  contents: write
 
 jobs:
   build:
