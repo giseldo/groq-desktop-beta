@@ -13,7 +13,7 @@ function loadSettings() {
         // Return minimal defaults to avoid crashing downstream logic
         return {
             GROQ_API_KEY: process.env.GROQ_API_KEY || "<replace me>",
-            model: process.env.GROQ_DEFAULT_MODEL || "llama-3.3-70b-versatile",
+            model: process.env.GROQ_DEFAULT_MODEL || "openai/gpt-oss-120b",
             temperature: 0.7,
             top_p: 0.95,
             mcpServers: {},
@@ -40,7 +40,7 @@ function loadSettings() {
     const settingsPath = path.join(userDataPath, 'settings.json');
     const defaultSettings = {
         GROQ_API_KEY: process.env.GROQ_API_KEY || "<replace me>",
-        model: process.env.GROQ_DEFAULT_MODEL || "llama-3.3-70b-versatile",
+        model: process.env.GROQ_DEFAULT_MODEL || "openai/gpt-oss-120b",
         temperature: 0.7,
         top_p: 0.95,
         reasoning_effort: 'medium',

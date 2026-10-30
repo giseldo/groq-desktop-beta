@@ -43,7 +43,7 @@ function validateApiKey(settings) {
 }
 
 function determineModel(model, settings, modelContextSizes) {
-    const modelToUse = model || settings.model || "llama-3.3-70b-versatile";
+    const modelToUse = model || settings.model || "openai/gpt-oss-120b";
     const modelInfo = modelContextSizes[modelToUse] || modelContextSizes['default'] || { context: 8192, vision_supported: false };
     return { modelToUse, modelInfo };
 }
@@ -484,7 +484,8 @@ async function summarizeReasoningChunk(groq, reasoningText, event, streamId, sum
             ],
             model: 'openai/gpt-oss-120b',
             temperature: 0.3,
-            max_tokens: 10,
+            reasoning_effort: 'low',
+            max_tokens: 150,
             stream: false
         });
         

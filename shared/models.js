@@ -23,7 +23,7 @@ function applyModelHeuristics(modelId, apiModelData) {
   const builtin_tools_supported = modelName.includes('gpt-oss');
   
   // Heuristic: 'llama-4' in name = supports vision
-  const vision_supported = modelName.includes('llama-4');
+  const vision_supported = modelName.includes('llama-4') || modelName.includes('qwen3.8');
   
   return {
     context,

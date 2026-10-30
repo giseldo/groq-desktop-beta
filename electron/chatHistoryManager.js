@@ -50,7 +50,7 @@ function getChatFilePath(chatId) {
  * @param {boolean} useResponsesApi - Whether this chat uses Responses API
  * @returns {Object} The new chat object
  */
-function createChat(model = 'llama-3.3-70b-versatile', useResponsesApi = false) {
+function createChat(model = 'openai/gpt-oss-120b', useResponsesApi = false) {
     const now = new Date().toISOString();
     const chat = {
         id: crypto.randomUUID(),
@@ -266,7 +266,8 @@ async function generateChatTitle(userMessage) {
             ],
             model: 'openai/gpt-oss-120b',
             temperature: 0.3,
-            max_tokens: 20,
+            reasoning_effort: 'low',
+            max_tokens: 200,
             stream: false
         });
         
