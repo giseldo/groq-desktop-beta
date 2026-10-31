@@ -75,7 +75,8 @@ function ChatHistorySidebar({ onNewChat, onChatLoaded, loading }) {
     chatList, 
     currentChatId, 
     loadChat, 
-    deleteChat, 
+    deleteChat,
+    deleteAllChats,
     isSidebarCollapsed, 
     toggleSidebar,
     isLoadingChats 
@@ -84,8 +85,10 @@ function ChatHistorySidebar({ onNewChat, onChatLoaded, loading }) {
   const [hoveredChatId, setHoveredChatId] = useState(null);
   const [menuOpenChatId, setMenuOpenChatId] = useState(null);
   const [deletingChatId, setDeletingChatId] = useState(null);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const menuButtonRefs = useRef({});
+  const deleteAllDialogRef = useRef(null);
 
   // Resize state
   const [sidebarWidth, setSidebarWidth] = useState(() => {
@@ -156,6 +159,30 @@ function ChatHistorySidebar({ onNewChat, onChatLoaded, loading }) {
     await deleteChat(chatId);
     setDeletingChatId(null);
     setMenuOpenChatId(null);
+  };
+
+  const handleOpenDeleteAllDialog = () => {
+    if (loading || isDeletingAll || chatList.length === 0) return;
+    setMenuOpenChatId(null);
+    if (deleteAllDialogRef.current) {
+      deleteAllDialogRef.current.showModal();
+    }
+  };
+
+  const handleCloseDeleteAllDialog = () => {
+    if (deleteAllDialogRef.current && deleteAllDialogRef.current.open) {
+      deleteAllDialogRef.current.close();
+    }
+  };
+
+  const handleConfirmDeleteAll = async () => {
+    setIsDeletingAll(true);
+    try {
+      await deleteAllChats();
+      handleCloseDeleteAllDialog();
+    } finally {
+      setIsDeletingAll(false);
+    }
   };
 
   const handleMenuToggle = (e, chatId) => {
@@ -296,6 +323,18 @@ function ChatHistorySidebar({ onNewChat, onChatLoaded, loading }) {
           <h2 className="font-semibold text-sm">Chats</h2>
         )}
         <div className={`flex items-center gap-1 ${isSidebarCollapsed ? 'w-full justify-center' : ''}`}>
+          {!isSidebarCollapsed && chatList.length > 0 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleOpenDeleteAllDialog}
+              disabled={loading || isDeletingAll}
+              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+              title="Delete all chats"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -349,9 +388,79 @@ function ChatHistorySidebar({ onNewChat, onChatLoaded, loading }) {
           </>
         )}
       </div>
+
+      {/* Footer - Delete All Chats */}
+      {chatList.length > 0 && (
+        <div className="p-2 border-t border-border">
+          {isSidebarCollapsed ? (
+            <div className="flex justify-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleOpenDeleteAllDialog}
+                disabled={loading || isDeletingAll}
+                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                title="Delete all chats"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleOpenDeleteAllDialog}
+              disabled={loading || isDeletingAll}
+              className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete All Chats
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Confirmation Dialog for Deleting All Chats */}
+      <dialog
+        ref={deleteAllDialogRef}
+        aria-labelledby="delete-all-chats-title"
+        className="p-0 rounded-lg border border-border bg-background text-foreground shadow-xl max-w-md w-full backdrop:bg-black/50"
+      >
+        <div className="p-6 space-y-4">
+          <div className="space-y-2">
+            <h2 id="delete-all-chats-title" className="text-lg font-semibold">
+              Delete all chats?
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              This will permanently delete all {chatList.length} conversation{chatList.length === 1 ? '' : 's'} from your history. This action cannot be undone.
+            </p>
+          </div>
+          <form method="dialog" className="flex justify-end gap-2 pt-2">
+            <Button
+              type="submit"
+              value="cancel"
+              variant="outline"
+              size="sm"
+              autoFocus
+              disabled={isDeletingAll}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={handleConfirmDeleteAll}
+              disabled={isDeletingAll}
+            >
+              <Trash2 className="h-4 w-4 mr-1.5" />
+              {isDeletingAll ? 'Deleting...' : 'Delete All'}
+            </Button>
+          </form>
+        </div>
+      </dialog>
     </div>
   );
 }
 
 export default ChatHistorySidebar;
-

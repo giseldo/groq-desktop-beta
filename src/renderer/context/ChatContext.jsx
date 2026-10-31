@@ -171,6 +171,25 @@ export const ChatProvider = ({ children }) => {
     return false;
   }, [loadChatList, triggerInputFocus]);
 
+  // Delete all chats
+  const deleteAllChats = useCallback(async () => {
+    try {
+      const result = await window.electron.chatHistory.deleteAll();
+      if (result.success) {
+        currentChatIdRef.current = null;
+        setCurrentChatId(null);
+        setMessages([]);
+        needsTitleGeneration.current = false;
+        setChatList([]);
+        triggerInputFocus();
+        return true;
+      }
+    } catch (error) {
+      console.error('Error deleting all chats:', error);
+    }
+    return false;
+  }, [triggerInputFocus]);
+
   // Start a fresh chat (clear current without creating new)
   const startFreshChat = useCallback(() => {
     currentChatIdRef.current = null;
@@ -231,6 +250,7 @@ export const ChatProvider = ({ children }) => {
     loadChat,
     saveCurrentChat,
     deleteChat,
+    deleteAllChats,
     startFreshChat,
     toggleSidebar,
     needsTitleGeneration,

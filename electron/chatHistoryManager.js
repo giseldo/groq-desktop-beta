@@ -140,6 +140,32 @@ function deleteChat(chatId) {
 }
 
 /**
+ * Delete all chats from disk
+ * @returns {boolean} True if all chats were deleted successfully
+ */
+function deleteAllChats() {
+    const chatDir = getChatHistoryDir();
+    
+    try {
+        const files = fs.readdirSync(chatDir);
+        for (const file of files) {
+            if (file.endsWith('.json')) {
+                const filePath = path.join(chatDir, file);
+                try {
+                    fs.unlinkSync(filePath);
+                } catch (error) {
+                    console.error(`Error deleting chat file ${file}:`, error);
+                }
+            }
+        }
+        return true;
+    } catch (error) {
+        console.error('Error deleting all chats:', error);
+        return false;
+    }
+}
+
+/**
  * Get a list of all chats (metadata only, not full messages)
  * @returns {Array} Array of chat metadata objects sorted by updatedAt descending
  */
@@ -326,6 +352,12 @@ function initializeChatHistoryHandlers(ipcMain) {
         const success = deleteChat(chatId);
         return { success };
     });
+
+    // Delete all chats
+    ipcMain.handle('chat-history-delete-all', async () => {
+        const success = deleteAllChats();
+        return { success };
+    });
     
     // Generate a title for a chat
     ipcMain.handle('chat-history-generate-title', async (event, userMessage) => {
@@ -340,9 +372,9 @@ module.exports = {
     loadChat,
     saveChat,
     deleteChat,
+    deleteAllChats,
     listChats,
     updateChatMessages,
     updateChatTitle,
     generateChatTitle
 };
-
