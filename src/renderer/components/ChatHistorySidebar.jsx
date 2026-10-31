@@ -389,37 +389,6 @@ function ChatHistorySidebar({ onNewChat, onChatLoaded, loading }) {
         )}
       </div>
 
-      {/* Footer - Delete All Chats */}
-      {chatList.length > 0 && (
-        <div className="p-2 border-t border-border">
-          {isSidebarCollapsed ? (
-            <div className="flex justify-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleOpenDeleteAllDialog}
-                disabled={loading || isDeletingAll}
-                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                title="Delete all chats"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleOpenDeleteAllDialog}
-              disabled={loading || isDeletingAll}
-              className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete All Chats
-            </Button>
-          )}
-        </div>
-      )}
-
       {/* Confirmation Dialog for Deleting All Chats */}
       <dialog
         ref={deleteAllDialogRef}
