@@ -1,6 +1,6 @@
 {
   "name": "groq-desktop-app",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A simple Electron app with Groq API integration",
   "main": "electron/main.js",
   "type": "commonjs",
@@ -93,7 +93,11 @@
       "output": "release"
     },
     "mac": {
-      "category": "public.app-category.productivity"
+      "category": "public.app-category.productivity",
+      "artifactName": "${productName}-${arch}-${os}.${ext}"
+    },
+    "dmg": {
+      "artifactName": "${productName}-${arch}.${ext}"
     },
     "win": {
       "target": [
@@ -101,6 +105,12 @@
         "portable"
       ],
       "icon": "public/icon.png"
+    },
+    "nsis": {
+      "artifactName": "${productName} Setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}.${ext}"
     },
     "linux": {
       "target": [
@@ -111,6 +121,15 @@
       "category": "Development",
       "maintainer": "Groq <support@groq.com>",
       "icon": "public/icon.png"
+    },
+    "appImage": {
+      "artifactName": "${productName}.${ext}"
+    },
+    "deb": {
+      "artifactName": "${name}_${arch}.${ext}"
+    },
+    "rpm": {
+      "artifactName": "${name}.${arch}.${ext}"
     }
   },
   "engines": {

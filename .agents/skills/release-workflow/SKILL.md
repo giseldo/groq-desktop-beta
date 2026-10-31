@@ -19,14 +19,14 @@ Incremente o número de versão patch (ex.: `1.0.2` -> `1.0.3`) no arquivo `pack
 node -e "const fs = require('fs'); const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')); const parts = pkg.version.split('.').map(Number); parts[2] += 1; pkg.version = parts.join('.'); fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n'); console.log('New version:', pkg.version);"
 ```
 
-### 2. Apagar releases locais antigos e gerar o novo build
-Execute o script de distribuição que limpa a pasta `release/` (`pnpm clean:release`), compila o frontend (`pnpm build`) e gera os executáveis da nova versão:
+### 2. Apagar releases locais antigos e gerar o novo `dist` e `release`
+Execute o script de distribuição que limpa a pasta `release/` (`pnpm clean:release`), compila o frontend atualizando a pasta `dist/` (`pnpm build`) e gera os executáveis da nova versão na pasta `release/` (`electron-builder --win --publish never`):
 
 ```powershell
 pnpm dist:win
 ```
 
-Verifique se os arquivos `Groq Desktop Setup <versão>.exe` e `Groq Desktop <versão>.exe` foram gerados na pasta `release/`.
+Verifique se a pasta `dist/` foi atualizada e se os arquivos `Groq Desktop Setup.exe` e `Groq Desktop.exe` foram gerados na pasta `release/`.
 
 ### 3. Commit, Tag e Push
 Faça o stage das alterações, crie o commit, crie a tag `v<versão>` e envie para o remoto `fork` (`https://github.com/giseldo/groq-desktop-beta.git`):
