@@ -9,6 +9,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import Switch from '../components/ui/Switch';
+import packageJson from '../../../package.json';
 
 function Settings() {
   const [settings, setSettings] = useState({
@@ -1110,6 +1111,7 @@ function Settings() {
             <div className="flex items-center space-x-2">
               <SettingsIcon className="h-6 w-6 text-primary" />
               <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+              <Badge variant="secondary" className="font-mono text-xs">v{packageJson.version}</Badge>
             </div>
           </div>
 
@@ -1160,9 +1162,14 @@ function Settings() {
             {settingsPath && (
               <Card>
                 <CardContent className="p-4">
-                  <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center space-x-2">
                     <Key className="h-4 w-4" />
                     <span>Settings file: <code className="text-xs bg-muted px-1 py-0.5 rounded">{settingsPath}</code></span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span>Version: <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-semibold">v{packageJson.version}</code></span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
