@@ -265,6 +265,9 @@ app.whenReady().then(async () => {
   const newChatShortcutRegistered = globalShortcut.register(newChatAccelerator, () => {
     console.log(`Global hotkey ${newChatAccelerator} pressed - creating new chat`);
     if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+      mainWindow.webContents.focus();
       mainWindow.webContents.send('new-chat-requested');
     }
   });

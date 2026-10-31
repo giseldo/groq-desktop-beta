@@ -1,5 +1,5 @@
 import { ArrowUp, Loader2, ImagePlus, Hammer, Upload, Zap, ZapOff, Square } from "lucide-react";
-import React, { useContext, useEffect, useRef, useState, useMemo } from "react";
+import React, { useContext, useEffect, useRef, useState, useMemo, useCallback } from "react";
 import TextAreaAutosize from "react-textarea-autosize";
 import { SearchableSelect } from "./ui/SearchableSelect";
 import { Button } from "./ui/button";
@@ -21,7 +21,7 @@ function ChatInput({
 	const [suggestion, setSuggestion] = useState("");
 	const [autocompleteEnabled, setAutocompleteEnabled] = useState(true);
 	const suggestionTimeout = useRef(null);
-	const { messages, activeContext } = useContext(ChatContext);
+	const { messages, activeContext, currentChatId, focusTrigger } = useContext(ChatContext);
 
 	const [files, setFiles] = useState([]); // Changed from images to files to handle all file types
 	const [textareaHeight, setTextareaHeight] = useState(null);
@@ -163,14 +163,41 @@ function ChatInput({
 		}
 	};
 
-
-
-	// Focus the textarea after component mounts
-	useEffect(() => {
+	const focusTextarea = useCallback(() => {
 		if (textareaRef.current) {
 			textareaRef.current.focus();
 		}
+		const rafId = requestAnimationFrame(() => {
+			if (textareaRef.current) {
+				textareaRef.current.focus();
+			}
+		});
+		const timerId = setTimeout(() => {
+			if (textareaRef.current) {
+				textareaRef.current.focus();
+			}
+		}, 50);
+		return () => {
+			cancelAnimationFrame(rafId);
+			clearTimeout(timerId);
+		};
 	}, []);
+
+	// Focus the textarea after component mounts or when chat / focus trigger changes
+	useEffect(() => {
+		return focusTextarea();
+	}, [currentChatId, focusTrigger, focusTextarea]);
+
+	// Also focus textarea directly when the new-chat shortcut is triggered
+	useEffect(() => {
+		if (!window.electron?.onNewChatShortcut) return;
+		const removeListener = window.electron.onNewChatShortcut(() => {
+			focusTextarea();
+		});
+		return () => {
+			if (removeListener) removeListener();
+		};
+	}, [focusTextarea]);
 
 	// Focus the textarea when loading changes from true to false (completion finished)
 	useEffect(() => {

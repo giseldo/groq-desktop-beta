@@ -10,6 +10,11 @@ export const ChatProvider = ({ children }) => {
   const [chatList, setChatList] = useState([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isLoadingChats, setIsLoadingChats] = useState(true);
+  const [focusTrigger, setFocusTrigger] = useState(0);
+
+  const triggerInputFocus = useCallback(() => {
+    setFocusTrigger(prev => prev + 1);
+  }, []);
   
   // Use a ref to track current chat ID for immediate access (state updates are async)
   const currentChatIdRef = useRef(null);
@@ -85,8 +90,10 @@ export const ChatProvider = ({ children }) => {
         setCurrentChatId(chat.id);
         setMessages([]);
         needsTitleGeneration.current = true;
+        triggerInputFocus();
         // Refresh the chat list
         await loadChatList();
+        triggerInputFocus();
         console.log('[ChatContext] Created new chat:', chat.id, 'useResponsesApi:', useResponsesApi);
         return chat;
       }
@@ -94,7 +101,7 @@ export const ChatProvider = ({ children }) => {
       console.error('Error creating new chat:', error);
     }
     return null;
-  }, [loadChatList]);
+  }, [loadChatList, triggerInputFocus]);
 
   // Load a specific chat
   const loadChat = useCallback(async (chatId) => {
@@ -106,13 +113,14 @@ export const ChatProvider = ({ children }) => {
         setMessages(chat.messages || []);
         // Don't need title generation for existing chats
         needsTitleGeneration.current = false;
+        triggerInputFocus();
         return chat;
       }
     } catch (error) {
       console.error('Error loading chat:', error);
     }
     return null;
-  }, []);
+  }, [triggerInputFocus]);
 
   // Update the timestamp of a chat locally without reloading the entire list
   const updateChatTimestampLocally = useCallback((chatId) => {
@@ -151,6 +159,7 @@ export const ChatProvider = ({ children }) => {
           currentChatIdRef.current = null;
           setCurrentChatId(null);
           setMessages([]);
+          triggerInputFocus();
         }
         // Refresh chat list
         await loadChatList();
@@ -160,7 +169,7 @@ export const ChatProvider = ({ children }) => {
       console.error('Error deleting chat:', error);
     }
     return false;
-  }, [loadChatList]);
+  }, [loadChatList, triggerInputFocus]);
 
   // Start a fresh chat (clear current without creating new)
   const startFreshChat = useCallback(() => {
@@ -168,7 +177,8 @@ export const ChatProvider = ({ children }) => {
     setCurrentChatId(null);
     setMessages([]);
     needsTitleGeneration.current = false;
-  }, []);
+    triggerInputFocus();
+  }, [triggerInputFocus]);
 
   // Toggle sidebar collapsed state
   const toggleSidebar = useCallback(() => {
@@ -224,6 +234,8 @@ export const ChatProvider = ({ children }) => {
     startFreshChat,
     toggleSidebar,
     needsTitleGeneration,
+    focusTrigger,
+    triggerInputFocus,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

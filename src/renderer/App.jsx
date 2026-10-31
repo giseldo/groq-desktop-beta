@@ -87,6 +87,7 @@ function App() {
   const messagesContainerRef = useRef(null);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const userScrollingRef = useRef(false); // Immediate ref for preventing race conditions
+  const lastScrollTopRef = useRef(0); // Track previous scrollTop to detect scroll direction
   const scrollThrottleRef = useRef(null); // For throttling scroll during streaming
   const rafRef = useRef(null); // For requestAnimationFrame during streaming
   // Store the list of models from capabilities keys
@@ -509,116 +510,158 @@ function App() {
     // Depend on initialLoadComplete as well to trigger after load finishes
   }, [selectedModel, initialLoadComplete, models]);
 
-  // Check if user is at the bottom of the scroll area (within 100px threshold)
-  const isAtBottom = () => {
-    if (!messagesContainerRef.current) return true;
-    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
-    const threshold = 100;
-    return scrollHeight - scrollTop - clientHeight < threshold;
-  };
-
-  const scrollToBottom = (instant = false) => {
-    // Double-check before scrolling to prevent race conditions
-    if (!userScrollingRef.current) {
-      // Use instant scroll during streaming to avoid bouncy behavior
-      // Use smooth scroll for stable content (like when user sends a message)
-      messagesEndRef.current?.scrollIntoView({ behavior: instant ? 'instant' : 'smooth' });
+  const cancelPendingAutoScroll = useCallback(() => {
+    if (scrollThrottleRef.current) {
+      clearTimeout(scrollThrottleRef.current);
+      scrollThrottleRef.current = null;
     }
-  };
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+  }, []);
+
+  // Check if user is at the bottom of the scroll area (within small threshold)
+  const isAtBottom = useCallback((threshold = 15) => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    return scrollHeight - scrollTop - clientHeight <= threshold;
+  }, []);
+
+  const scrollToBottom = useCallback(() => {
+    // Double-check before scrolling to prevent race conditions
+    if (userScrollingRef.current) return;
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    container.scrollTop = container.scrollHeight;
+    lastScrollTopRef.current = container.scrollTop;
+  }, []);
+
+  const hasMessages = messages.length > 0;
+
+  // Reset user scrolling state when switching chats
+  useEffect(() => {
+    userScrollingRef.current = false;
+    setIsUserScrolling(false);
+    lastScrollTopRef.current = 0;
+  }, [currentChatId]);
 
   // Handle scroll events to detect when user manually scrolls
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
 
-    const handleScroll = () => {
-      const atBottom = isAtBottom();
-      if (atBottom) {
-        // User is at bottom, resume auto-scroll
-        userScrollingRef.current = false;
-        setIsUserScrolling(false);
-      } else if (!atBottom) {
-        // User scrolled up, disable auto-scroll
-        userScrollingRef.current = true;
-        setIsUserScrolling(true);
-      }
-    };
+    lastScrollTopRef.current = container.scrollTop;
 
-    // Detect scroll wheel/touch intent immediately (before scroll position changes)
-    const handleWheel = (e) => {
-      // ANY wheel event immediately cancels auto-scrolling to prevent fighting
+    const pauseAutoScroll = () => {
       userScrollingRef.current = true;
       setIsUserScrolling(true);
+      cancelPendingAutoScroll();
     };
 
-    const handleTouchStart = () => {
-      // When user touches to scroll, check if they're at bottom
-      if (!isAtBottom()) {
-        userScrollingRef.current = true;
-        setIsUserScrolling(true);
+    const resumeAutoScroll = () => {
+      userScrollingRef.current = false;
+      setIsUserScrolling(false);
+    };
+
+    const handleScroll = () => {
+      const currentScrollTop = container.scrollTop;
+      const prevScrollTop = lastScrollTopRef.current;
+      lastScrollTopRef.current = currentScrollTop;
+
+      const distanceFromBottom = container.scrollHeight - currentScrollTop - container.clientHeight;
+
+      if (currentScrollTop < prevScrollTop && distanceFromBottom > 2) {
+        // User scrolled up (via scrollbar drag, wheel, touch, or keyboard)
+        pauseAutoScroll();
+      } else if (currentScrollTop > prevScrollTop && distanceFromBottom <= 15) {
+        // User scrolled back down to the bottom
+        resumeAutoScroll();
       }
     };
 
-    container.addEventListener('scroll', handleScroll);
+    // Detect scrollbar click/drag immediately on pointerdown/mousedown
+    const handlePointerDown = (e) => {
+      const rect = container.getBoundingClientRect();
+      const isScrollbarClick = e.clientX >= rect.left + container.clientLeft + container.clientWidth;
+      if (isScrollbarClick) {
+        pauseAutoScroll();
+      }
+    };
+
+    // Detect scroll wheel intent immediately (before scroll position changes)
+    const handleWheel = (e) => {
+      if (e.deltaY < 0) {
+        pauseAutoScroll();
+      } else if (e.deltaY > 0 && isAtBottom(15)) {
+        resumeAutoScroll();
+      }
+    };
+
+    let touchStartY = null;
+    const handleTouchStart = (e) => {
+      if (e.touches && e.touches.length > 0) {
+        touchStartY = e.touches[0].clientY;
+      }
+    };
+
+    const handleTouchMove = (e) => {
+      if (touchStartY !== null && e.touches && e.touches.length > 0) {
+        const deltaY = e.touches[0].clientY - touchStartY;
+        if (deltaY > 5) {
+          // Finger moving down = scrolling up
+          pauseAutoScroll();
+        }
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (['ArrowUp', 'PageUp', 'Home'].includes(e.key)) {
+        pauseAutoScroll();
+      } else if (e.key === 'End') {
+        resumeAutoScroll();
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    container.addEventListener('pointerdown', handlePointerDown);
+    container.addEventListener('mousedown', handlePointerDown);
     container.addEventListener('wheel', handleWheel, { passive: true });
     container.addEventListener('touchstart', handleTouchStart, { passive: true });
+    container.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('keydown', handleKeyDown);
     
     return () => {
       container.removeEventListener('scroll', handleScroll);
+      container.removeEventListener('pointerdown', handlePointerDown);
+      container.removeEventListener('mousedown', handlePointerDown);
       container.removeEventListener('wheel', handleWheel);
       container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [hasMessages, cancelPendingAutoScroll, isAtBottom]);
 
   // Auto-scroll to bottom when messages change, but only if user hasn't scrolled up
   useEffect(() => {
     // Check both state and ref for maximum responsiveness
     if (!isUserScrolling && !userScrollingRef.current) {
-      // Check if any message is actively streaming
-      const isStreaming = messages.some(msg => msg.isStreaming === true);
-      
-      if (isStreaming) {
-        // Use requestAnimationFrame for smooth scrolling aligned with browser rendering
-        if (rafRef.current) {
-          cancelAnimationFrame(rafRef.current);
-        }
-        if (scrollThrottleRef.current) {
-          clearTimeout(scrollThrottleRef.current);
-        }
-        
-        // Throttle with rAF for optimal performance
-        scrollThrottleRef.current = setTimeout(() => {
-          rafRef.current = requestAnimationFrame(() => {
-            scrollToBottom(true); // instant scroll
-            rafRef.current = null;
-          });
-          scrollThrottleRef.current = null;
-        }, 50);
-      } else {
-        // Clear any pending throttled scroll and rAF
-        if (scrollThrottleRef.current) {
-          clearTimeout(scrollThrottleRef.current);
-          scrollThrottleRef.current = null;
-        }
-        if (rafRef.current) {
-          cancelAnimationFrame(rafRef.current);
-          rafRef.current = null;
-        }
-        // Non-streaming: scroll smoothly immediately
-        scrollToBottom(false);
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
       }
+      rafRef.current = requestAnimationFrame(() => {
+        scrollToBottom();
+        rafRef.current = null;
+      });
     }
     
     // Cleanup function
     return () => {
-      if (scrollThrottleRef.current) {
-        clearTimeout(scrollThrottleRef.current);
-      }
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-      }
+      cancelPendingAutoScroll();
     };
-  }, [messages, isUserScrolling]);
+  }, [messages, isUserScrolling, scrollToBottom, cancelPendingAutoScroll]);
 
   const executeToolCall = async (toolCall) => {
     try {
